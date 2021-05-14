@@ -13,21 +13,35 @@ f = askFile("Open a .sym file...", "Go!")
 
 is_ram = False
 
+is_gbc =  'wram1' in [x.name for x in currentProgram.getAddressFactory().addressSpaces]
+
 for line in file(f.absolutePath):  # note, cannot use open(), since that is in GhidraScript
 	pieces = line.split()
 
 	if pieces[0] != ';':
 		addr, sym = tuple(pieces[0:2])
+		addr = addr.lower()
 		
 		gb_addr = re.match(r'([0-9a-fA-F]{2}):([0-9a-fA-F]{4})', addr)
 		
 		if gb_addr:
 			_bank, _addr = tuple([x.lower() for x in list(gb_addr.groups())])
-			if re.match(r'[cd][0-9a-f]{2}', _addr):
+			if re.match(r'c[0-9a-f]{2}', _addr):
 				address_string = '{}'.format(_addr)
 				is_ram = True
+			if re.match(r'd[0-9a-f]{2}', _addr):
+				if is_gbc:
+					# flatten all WRAM constants
+					address_string = 'wram1::{}'.format(_addr)
+				else:
+					address_string = '{}'.format(_addr)
+				is_ram = True
 			elif re.match(r'[89][0-9a-f]{2}', _addr):
-				address_string = '{}'.format(_addr)
+				if is_gbc:
+					# flatten all VRAM constants
+					address_string = 'vram0::{}'.format(_addr)
+				else:
+					address_string = '{}'.format(_addr)
 				is_ram = True
 			elif re.match(r'[ab][0-9a-f]{2}', _addr):
 				address_string = '{}'.format(_addr)
