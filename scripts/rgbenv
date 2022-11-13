@@ -42,7 +42,7 @@ check_online_versions () {
 }
 
 help () {
-	echo "rgbenv v0.0.1 - manage RGBDS versions"
+	echo "rgbenv v0.0.2 - manage RGBDS versions"
 	echo
 	echo "Usage: rgbenv [use|exec|install|available] [options] [args]"
 	echo
@@ -56,7 +56,10 @@ help () {
 	echo
 	echo "    exec [-v/--version version]? [program, arg1, arg2, ...]"
 	echo "        Run commands using a specific version"
-	echo "        of RGBDS."
+	echo "        of RGBDS. If the file '.rgbds-version' is"
+	echo "        present in the current directory, it will use"
+	echo "        the version specified within, unless the -v"
+	echo "        option is specified to override it."
 	echo
 	echo "    install [version]"
 	echo "        Install a specific RGBDS version."
@@ -105,6 +108,11 @@ make_dirs () {
 	mkdir -p $RGBENV_CACHE
 }
 
+show_install_instructions () {
+	echo
+	echo "You can try to install this version by:"
+	echo "    rgbenv install $1"
+}
 point_to_available_command () {
 		echo
 		echo "To see available versions:"
@@ -189,9 +197,7 @@ _use () {
 		echo "Once that's done, verify with rgbasm -V."
 	else
 		echo "Version $1 has not been installed yet."
-		echo
-		echo "Install that version using:"
-		echo "    rgbenv install $1"
+		show_install_instructions $1
 		point_to_available_command
 	fi
 	fi
@@ -280,17 +286,34 @@ _uninstall () {
 }
 
 _exec () {
-	if [ "$1" == "--version" ] || [ "$1" == "-v" ] ; then
+	if [ -f .rgbds-version ]; then
+		local version=$(cat .rgbds-version | tr -d " \t\n\r")
+		checkver $version
+		if [ -x $RGBENV_CACHE/$RGBDS_PREFIX$version/rgbasm ]; then
+			shift
+			if [ ${#@} -gt 0 ]; then
+				echo "Executing with RGBDS version $version."
+				env PATH="$RGBENV_CACHE/$RGBDS_PREFIX$version:$PATH" $@
+			fi
+		else
+			echo "Version $version is not installed."
+			show_install_instructions $version
+			point_to_available_command
+			exit 1
+		fi
+	elif [ "$1" == "--version" ] || [ "$1" == "-v" ] ; then
 		shift
 		local version=$1
 		checkver $version
 		if [ -x $RGBENV_CACHE/$RGBDS_PREFIX$version/rgbasm ]; then
 			shift
 			if [ ${#@} -gt 0 ]; then
+				echo "Executing with RGBDS version $version."
 				env PATH="$RGBENV_CACHE/$RGBDS_PREFIX$version:$PATH" $@
 			fi
 		else
 			echo "Version $version is not installed."
+			show_install_instructions $version
 			point_to_available_command
 			exit 1
 		fi
@@ -331,5 +354,5 @@ case $1 in
 	uninstall* ) shift; _uninstall $1;;
 	exec* ) shift; _exec $@;;
 	available* ) shift; _available $1;;
-	*) help;;
+	*) if [ ! -z "$1" ]; then echo -e "Unknown command $1.\n"; fi; help;;
 esac
