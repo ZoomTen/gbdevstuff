@@ -306,7 +306,6 @@ _exec () {
 		local version=$(cat .rgbds-version | tr -d " \t\n\r")
 		checkver $version
 		if [ -x $RGBENV_CACHE/$RGBDS_PREFIX$version/rgbasm ]; then
-			shift
 			if [ ${#@} -gt 0 ]; then
 				echo "Executing with RGBDS version $version."
 				env PATH="$RGBENV_CACHE/$RGBDS_PREFIX$version:$PATH" $@
