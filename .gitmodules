@@ -1,0 +1,3 @@
+[submodule "rgbenv"]
+	path = rgbenv
+	url = https://github.com/ZoomTen/rgbenv
