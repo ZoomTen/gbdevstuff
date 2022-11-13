@@ -286,8 +286,9 @@ _uninstall () {
 }
 
 _exec () {
-	if [ -f .rgbds-version ]; then
-		local version=$(cat .rgbds-version | tr -d " \t\n\r")
+	if [ "$1" == "--version" ] || [ "$1" == "-v" ] ; then
+		shift
+		local version=$1
 		checkver $version
 		if [ -x $RGBENV_CACHE/$RGBDS_PREFIX$version/rgbasm ]; then
 			shift
@@ -301,9 +302,8 @@ _exec () {
 			point_to_available_command
 			exit 1
 		fi
-	elif [ "$1" == "--version" ] || [ "$1" == "-v" ] ; then
-		shift
-		local version=$1
+	elif [ -f .rgbds-version ]; then
+		local version=$(cat .rgbds-version | tr -d " \t\n\r")
 		checkver $version
 		if [ -x $RGBENV_CACHE/$RGBDS_PREFIX$version/rgbasm ]; then
 			shift
